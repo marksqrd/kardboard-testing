@@ -1,5 +1,6 @@
 *.pyc
 *.egg-info
+kardboard-venv/
 build
 var
 sample.cfg
