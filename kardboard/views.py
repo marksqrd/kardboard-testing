@@ -156,9 +156,11 @@ def state():
 
     board = DisplayBoard()  # defaults to all teams, 7 days of done
 
+    title = "All teams"
+    title_head = title
     KB_ENV=app.config.get('KB_ENV','prod')
     if KB_ENV != 'prod':
-        title = "All teams - using non-prod environment %s" % KB_ENV
+        title_head = "All teams - using non-prod environment %s" % KB_ENV
 
     wip_cards = Kard.in_progress(date)
     backlog_cards = Kard.backlogged(date)
