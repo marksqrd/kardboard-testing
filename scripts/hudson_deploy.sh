@@ -1,4 +1,5 @@
-# This simple fragment of code is inserted into Hudson to run the deploy process for both environments.
+#!/bin/sh
+# Hudson runs this version in master directly for deployments.
 
 ssh vcs <<eoh
 
@@ -6,31 +7,39 @@ set -e
 
 pushd /services/kardboard/kardboard-$KB_ENV/kardboard-$KB_ENV
 
-function prcmd() {
-        echo
-            echo "[vcs.ddtc:\$PWD] Running cmd: \$BASH_COMMAND"
-                echo
-}
+if [[ $KB_ENV == prod ]]; then
+        GIT_ORIGIN="master"
+        else
+                GIT_ORIGIN="$KB_ENV"
+                fi
 
-function prerr() {
-        echo
-            echo "Failed to complete deploy, red balling"
-                echo
-}
+                function prcmd() {
+                        echo
+                            echo "[vcs.ddtc:\$PWD] Running cmd: \$BASH_COMMAND"
+                                echo
+                }
 
-trap prerr ERR
-trap prcmd DEBUG
+                function prerr() {
+                        echo
+                            echo "Failed to complete deploy, red balling"
+                                echo
+                }
 
-source ../kardboard-venv-$KB_ENV/bin/activate
+                trap prerr ERR
+                trap prcmd DEBUG
 
-git clean -fdx
+                source ../kardboard-venv-$KB_ENV/bin/activate
 
-git pull 
+                git clean -fdx
 
-python -OO -m compileall .
-python -O -m compileall .
+                git pull 
 
-kardboard/runtests.py && echo "Unit tests passed!!!"
+                git diff origin/$GIT_ORIGIN | grep . && { echo "Failed to deploy"; exit 1; }
+
+                python -OO -m compileall .
+                python -O -m compileall .
+
+                kardboard/runtests.py && echo "Unit tests passed!!!"
 
 # Graceful shutdown of Celery/Celerybeat.  supervisord auto restarts.
 pkill -f python.\*-$KB_ENV\$
@@ -38,3 +47,4 @@ pkill -f python.\*-$KB_ENV\$
 pkill -2 -f python.\*-MEDLEY_DASH
 
 eoh
+
