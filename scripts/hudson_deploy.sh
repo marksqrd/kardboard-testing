@@ -10,38 +10,38 @@ KB_ENV=$1
 pushd /services/kardboard/kardboard-$KB_ENV/kardboard-$KB_ENV
 
 if [[ $KB_ENV == prod ]]; then
-        GIT_ORIGIN="master"
-        else
-                GIT_ORIGIN="$KB_ENV"
-                fi
+    GIT_ORIGIN="master"
+else
+    GIT_ORIGIN="$KB_ENV"
+fi
 
-                function prcmd() {
-                        echo
-                            echo "[vcs.ddtc:\$PWD] Running cmd: \$BASH_COMMAND"
-                                echo
-                }
+function prcmd() {
+    echo
+    echo "[vcs.ddtc:\$PWD] Running cmd: $BASH_COMMAND"
+    echo
+}
 
-                function prerr() {
-                        echo
-                            echo "Failed to complete deploy, red balling"
-                                echo
-                }
+function prerr() {
+    echo
+    echo "Failed to complete deploy, red balling"
+    echo
+}
 
-                trap prerr ERR
-                trap prcmd DEBUG
+trap prerr ERR
+trap prcmd DEBUG
 
-                source ../kardboard-venv-$KB_ENV/bin/activate
+source ../kardboard-venv-$KB_ENV/bin/activate
 
-                git clean -fdx
+git clean -fdx
 
-                git pull 
+git pull 
 
-                git diff origin/$GIT_ORIGIN | grep . && { echo "Failed to deploy"; exit 1; }
+git diff origin/$GIT_ORIGIN | grep . && { echo "Failed to deploy"; exit 1; }
 
-                python -OO -m compileall .
-                python -O -m compileall .
+python -OO -m compileall .
+python -O -m compileall .
 
-                kardboard/runtests.py && echo "Unit tests passed!!!"
+kardboard/runtests.py && echo "Unit tests passed!!!"
 
 # Graceful shutdown of Celery/Celerybeat.  supervisord auto restarts.
 pkill -f python.\*-$KB_ENV\$
