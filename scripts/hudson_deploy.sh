@@ -34,6 +34,10 @@ source ../kardboard-venv-$KB_ENV/bin/activate
 
 git clean -fdx
 
+# Ensure branche configs are setup correctly
+git config branch.$KB_ENV.merge refs/heads/$GIT_ORIGIN
+git config branch.$KB_ENV.remote origin
+
 git pull 
 
 git diff origin/$GIT_ORIGIN | grep . && { echo "Failed to deploy"; exit 1; }
