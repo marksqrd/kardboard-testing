@@ -1,0 +1,79 @@
+# Redirect to SSL for all requests.  Sensitive information.
+<VirtualHost *:80>
+    ServerName medleydashboard.cmgdigital.com
+    ServerAlias kanban.ddtc.cmgdigital.com kanban.cmgdigital.com
+
+    ErrorLog "/localfs/httpd/logs/medleydashboard.cmgdigital.com-redirect-ssl-error_log"
+    CustomLog "/localfs/httpd/logs/medleydashboard.cmgdigital.com-redirect-ssl-access_log" combined
+
+    RedirectMatch permanent ^/.* https://kanban.cmgdigital.com/
+
+</VirtualHost>
+
+# SSL key = *.cmgdigital.com
+<VirtualHost *:443>
+    ServerName kanban.cmgdigital.com
+    ServerAlias kanban.ddtc.cmgdigital.com kanban.cmgdigital.com
+
+    ErrorLog "/localfs/httpd/logs/medleydashboard-ssl.cmgdigital.com-error_log"
+    CustomLog "/localfs/httpd/logs/medleydashboard-ssl.cmgdigital.com-access_log" combined
+    DocumentRoot /services/kardboard
+
+    WSGIDaemonProcess MEDLEY_DASH processes=2 threads=1 display-name=MEDLEY_DASH user=cmgdapp group=apache
+    WSGIProcessGroup MEDLEY_DASH
+
+    WSGIImportScript kardboard-prod/kardboard-prod/kardboard/wsgi/kardboard.wsgi process-group=MEDLEY_DASH application-group=prod
+    WSGIImportScript kardboard-test/kardboard-test/kardboard/wsgi/kardboard.wsgi process-group=MEDLEY_DASH application-group=test
+
+    RewriteEngine On
+    # Uncomment for rewrite debugging.
+    #rewritelog "/tmp/rewrite"
+    #rewriteloglevel 9
+
+    # Manually override environment cookie under /test or /prod
+    RewriteCond %{REQUEST_URI} ^/(prod|test)
+    RewriteRule . - [CO=KARDBOARD_ENV:%1:.cmgdigital.com:24:/:0:1,C]
+    RewriteRule / https://kanban.cmgdigital.com/ [R=permanent,L]
+
+    # Set cookie and KB_ENV to test or prod using cookie: KARDBOARD_ENV
+    RewriteCond %{HTTP_COOKIE} KARDBOARD_ENV=([a-z_]+)
+    RewriteRule . - [E=KB_ENV:%1,S=1]
+    # If no cookie set default environment to prod
+    RewriteRule . - [E=KB_ENV:prod]
+    RewriteRule . - [CO=KARDBOARD_ENV:%{ENV:KB_ENV}:.cmgdigital.com:24:/:0:1]
+
+    # Rewrite to WSGSI script handler based on ENV value
+    RewriteRule (.*) /services/kardboard/kardboard-%{ENV:KB_ENV}/kardboard-%{ENV:KB_ENV}/kardboard/wsgi/kardboard.wsgi$1 [H=wsgi-script,L]
+
+    # Map to appropriate sub-interpreter based on environment name. -MH
+    # This runs within a the same WSGI daemon - both environments will restart simultaneously
+    # however shared resources reduce memory footprint -MH
+    # This should be switched to non-shared daemons if deploys are frequent. -MH
+    WSGIApplicationGroup %{ENV:KB_ENV}
+
+    <Directory /services/kardboard/kardboard-*/kardboard-*/kardboard/wsgi>
+        Options ExecCGI
+    </Directory>
+
+    # SSL is required, SSL key host = *.cmgdigital.com
+
+    #   SSL Engine Switch:
+    #   Enable/Disable SSL for this virtual host.
+    SSLEngine on
+
+    #   SSL Protocol support:
+    # List the enable protocol levels with which clients will be able to
+    # connect.  Disable SSLv2 access by default:
+    SSLProtocol all -SSLv2
+
+    #   SSL Cipher Suite:
+    # List the ciphers that the client is permitted to negotiate.
+    # See the mod_ssl documentation for a complete list.
+    SSLCipherSuite ALL:!ADH:!EXPORT:!SSLv2:RC4+RSA:+HIGH:+MEDIUM:+LOW
+
+    SSLCertificateFile /admin/etc/Certs/cmgdigital.com.crt
+    SSLCertificateKeyFile /admin/etc/Certs/cmgdigital.com.key
+    SSLCertificateChainFile /admin/etc/Certs/cmgdigital.com.crt
+    SSLCACertificateFile /admin/etc/Certs/gd_bundle.crt
+
+</VirtualHost>                                  
