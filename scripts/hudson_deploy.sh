@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/sh 
 # Hudson runs this version in master directly for deployments.
-
-ssh vcs <<eoh
+# first supplied argument is the environment name as passed from Hudson. (test or prod)
 
 set -e
+
+KB_ENV=$1
+[ -z "$KB_ENV" ] && KB_ENV="prod"
 
 pushd /services/kardboard/kardboard-$KB_ENV/kardboard-$KB_ENV
 
@@ -45,6 +47,3 @@ if [[ $KB_ENV == prod ]]; then
 pkill -f python.\*-$KB_ENV\$
 # Graceful shutdown of WSGI deamons, this resets both test and prod code bases.  apache auto restarts.
 pkill -2 -f python.\*-MEDLEY_DASH
-
-eoh
-
