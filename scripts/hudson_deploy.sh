@@ -48,6 +48,6 @@ python -O -m compileall .
 kardboard/runtests.py && echo "Unit tests passed!!!"
 
 # Graceful shutdown of Celery/Celerybeat.  supervisord auto restarts.
-pkill -f "python.*-$KB_ENV$"
+pkill -f "python.*-$KB_ENV\$"
 # Graceful shutdown of WSGI deamons, this resets both test and prod code bases.  apache auto restarts.
-pkill -2 -f "python.*-MEDLEY_DASH"
+pkill -2 -f MEDLEY_DASH
