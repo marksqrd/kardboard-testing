@@ -17,7 +17,7 @@ fi
 
 function prcmd() {
     echo
-    echo "[vcs.ddtc:$PWD] Running cmd: $BASH_COMMAND"
+    echo "[vcs.ddtc:$PWD] Running cmd: "$BASH_COMMAND
     echo
 }
 
